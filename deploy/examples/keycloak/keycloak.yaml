@@ -3,5 +3,5 @@ kind: Keycloak
 metadata:
   name: example-keycloak
 spec:
-  # Add fields here
-  size: 3
+  instances: 1
+  extensions: []
