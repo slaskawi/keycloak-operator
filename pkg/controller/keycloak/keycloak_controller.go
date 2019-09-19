@@ -105,18 +105,24 @@ func (r *ReconcileKeycloak) Reconcile(request reconcile.Request) (reconcile.Resu
 	err = runner.RunAll(desirecClusterState)
 
 	if err != nil {
-		log.Info(fmt.Sprint("desired cluster state not yet met"))
+		log.Info(fmt.Sprint("\u274C desired cluster state not yet met"))
 		return reconcile.Result{}, nil
 	}
 
+	log.Info(fmt.Sprint("\u2713 desired cluster state met"))
 	return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 }
 
 func (r *ReconcileKeycloak) buildDesiredClusterState(cr *kc.Keycloak) common.DesiredClusterState {
-	desiredState := common.DesiredClusterState{}
+	demoConfigMap := keycloak.DemoConfigMap(cr)
 
-	desiredState = append(desiredState, common.KcConfigMap{Ref: keycloak.DemoConfigMap(cr)}.Create("create config map"))
-	desiredState = append(desiredState, common.KcConfigMap{Ref: keycloak.DemoConfigMap(cr)}.Exists("check if demo config map exists"))
+	d := common.DesiredClusterState{}
 
-	return desiredState
+	d = append(d, demoConfigMap.Exists("check if demo config map exists"))
+	d = append(d, demoConfigMap.Branch(common.On{
+		Success: demoConfigMap.Update("update existing config map"),
+		Fail:    demoConfigMap.Create("create new demo config map"),
+	}))
+
+	return d
 }

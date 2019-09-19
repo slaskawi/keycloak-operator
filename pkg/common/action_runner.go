@@ -9,8 +9,9 @@ import (
 )
 
 type ActionRunner struct {
-	client client.Client
-	logger logr.Logger
+	client    client.Client
+	logger    logr.Logger
+	lastError error
 }
 
 type Action interface {
@@ -34,6 +35,12 @@ type UpdateConfigMapAction struct {
 	msg string
 }
 
+type OnAction struct {
+	ref     *v1.ConfigMap
+	success Action
+	fail    Action
+}
+
 func NewActionRunner(client client.Client, logger logr.Logger) *ActionRunner {
 	return &ActionRunner{
 		client: client,
@@ -45,17 +52,24 @@ func (i *ActionRunner) RunAll(actions []Action) error {
 	for index, action := range actions {
 		msg, err := action.run(i)
 		if err != nil {
-			i.logger.Info(fmt.Sprintf("(%d) %15s: %s", index, "FAILED", msg))
-			return err
+			i.lastError = err
+			i.logger.Info(fmt.Sprintf("(%d) %-15s %s", index, "FAILED", msg))
+			continue
 		}
 
-		i.logger.Info(fmt.Sprintf("(%d) %15s: %s", index, "SUCCESS", msg))
+		i.lastError = nil
+		i.logger.Info(fmt.Sprintf("(%d) %-15s %s", index, "SUCCESS", msg))
 	}
 
-	return nil
+	return i.lastError
 }
 
 func (i *ExistsConfigMapAction) run(runner *ActionRunner) (string, error) {
+	// Don't continue if there was a previous error
+	if runner.lastError != nil {
+		return i.msg, runner.lastError
+	}
+
 	selector := client.ObjectKey{
 		Name:      i.ref.Name,
 		Namespace: i.ref.Namespace,
@@ -65,9 +79,29 @@ func (i *ExistsConfigMapAction) run(runner *ActionRunner) (string, error) {
 }
 
 func (i *CreateConfigMapAction) run(runner *ActionRunner) (string, error) {
+	// Don't continue if there was a previous error
+	if runner.lastError != nil {
+		return i.msg, runner.lastError
+	}
+
 	return i.msg, runner.client.Create(context.TODO(), i.ref)
 }
 
 func (i *UpdateConfigMapAction) run(runner *ActionRunner) (string, error) {
+	// Don't continue if there was a previous error
+	if runner.lastError != nil {
+		return i.msg, runner.lastError
+	}
+
 	return i.msg, runner.client.Update(context.TODO(), i.ref)
+}
+
+func (i *OnAction) run(runner *ActionRunner) (string, error) {
+	if runner.lastError != nil {
+		runner.lastError = nil
+		return i.fail.run(runner)
+	} else {
+		runner.lastError = nil
+		return i.success.run(runner)
+	}
 }
