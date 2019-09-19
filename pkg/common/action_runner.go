@@ -21,24 +21,24 @@ type Action interface {
 type DesiredClusterState []Action
 
 type ExistsConfigMapAction struct {
-	ref *v1.ConfigMap
-	msg string
+	Ref *v1.ConfigMap
+	Msg string
 }
 
 type CreateConfigMapAction struct {
-	ref *v1.ConfigMap
-	msg string
+	Ref *v1.ConfigMap
+	Msg string
 }
 
 type UpdateConfigMapAction struct {
-	ref *v1.ConfigMap
-	msg string
+	Ref *v1.ConfigMap
+	Msg string
 }
 
 type OnAction struct {
-	ref     *v1.ConfigMap
-	success Action
-	fail    Action
+	Ref     *v1.ConfigMap
+	Success Action
+	Fail    Action
 }
 
 func NewActionRunner(client client.Client, logger logr.Logger) *ActionRunner {
@@ -67,41 +67,41 @@ func (i *ActionRunner) RunAll(actions []Action) error {
 func (i *ExistsConfigMapAction) run(runner *ActionRunner) (string, error) {
 	// Don't continue if there was a previous error
 	if runner.lastError != nil {
-		return i.msg, runner.lastError
+		return i.Msg, runner.lastError
 	}
 
 	selector := client.ObjectKey{
-		Name:      i.ref.Name,
-		Namespace: i.ref.Namespace,
+		Name:      i.Ref.Name,
+		Namespace: i.Ref.Namespace,
 	}
 
-	return i.msg, runner.client.Get(context.TODO(), selector, i.ref)
+	return i.Msg, runner.client.Get(context.TODO(), selector, i.Ref)
 }
 
 func (i *CreateConfigMapAction) run(runner *ActionRunner) (string, error) {
 	// Don't continue if there was a previous error
 	if runner.lastError != nil {
-		return i.msg, runner.lastError
+		return i.Msg, runner.lastError
 	}
 
-	return i.msg, runner.client.Create(context.TODO(), i.ref)
+	return i.Msg, runner.client.Create(context.TODO(), i.Ref)
 }
 
 func (i *UpdateConfigMapAction) run(runner *ActionRunner) (string, error) {
 	// Don't continue if there was a previous error
 	if runner.lastError != nil {
-		return i.msg, runner.lastError
+		return i.Msg, runner.lastError
 	}
 
-	return i.msg, runner.client.Update(context.TODO(), i.ref)
+	return i.Msg, runner.client.Update(context.TODO(), i.Ref)
 }
 
 func (i *OnAction) run(runner *ActionRunner) (string, error) {
 	if runner.lastError != nil {
 		runner.lastError = nil
-		return i.fail.run(runner)
+		return i.Fail.run(runner)
 	} else {
 		runner.lastError = nil
-		return i.success.run(runner)
+		return i.Success.run(runner)
 	}
 }

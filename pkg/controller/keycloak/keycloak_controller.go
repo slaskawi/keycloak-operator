@@ -32,12 +32,12 @@ func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
-// newReconciler returns a new reconcile.Reconciler
+// newReconciler returns a new reconcile.Reconcile
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileKeycloak{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
+// add adds a new Controller to mgr with r as the reconcile.Reconcile
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
 	c, err := controller.New("keycloak-controller", mgr, controller.Options{Reconciler: r})
@@ -64,7 +64,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-// blank assignment to verify that ReconcileKeycloak implements reconcile.Reconciler
+// blank assignment to verify that ReconcileKeycloak implements reconcile.Reconcile
 var _ reconcile.Reconciler = &ReconcileKeycloak{}
 
 // ReconcileKeycloak reconciles a Keycloak object
@@ -100,14 +100,28 @@ func (r *ReconcileKeycloak) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	desirecClusterState := r.buildDesiredClusterState(instance)
+	currentState := r.buildCurrentState(instance)
+	//Figure whether we need KeycloakReconciler or RHSSOReconciler here
+	reconciler := KeycloakReconciler{}
+	log.Info(fmt.Sprintf("CurrentState: %v", currentState))
+	actions := reconciler.Reconcile(currentState, *instance)
+	log.Info(fmt.Sprintf("Actions: %+q", actions))
 	runner := common.NewActionRunner(r.client, log)
-	err = runner.RunAll(desirecClusterState)
+	err = runner.RunAll(actions)
 
 	if err != nil {
 		log.Info(fmt.Sprint("\u274C desired cluster state not yet met"))
 		return reconcile.Result{}, nil
 	}
+
+	//desirecClusterState := r.buildDesiredClusterState(instance)
+	//runner := common.NewActionRunner(r.client, log)
+	//err = runner.RunAll(desirecClusterState)
+	//
+	//if err != nil {
+	//	log.Info(fmt.Sprint("\u274C desired cluster state not yet met"))
+	//	return reconcile.Result{}, nil
+	//}
 
 	log.Info(fmt.Sprint("\u2713 desired cluster state met"))
 	return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
@@ -115,6 +129,7 @@ func (r *ReconcileKeycloak) Reconcile(request reconcile.Request) (reconcile.Resu
 
 func (r *ReconcileKeycloak) buildDesiredClusterState(cr *kc.Keycloak) common.DesiredClusterState {
 	demoConfigMap := keycloak.DemoConfigMap(cr)
+
 
 	d := common.DesiredClusterState{}
 
@@ -125,4 +140,22 @@ func (r *ReconcileKeycloak) buildDesiredClusterState(cr *kc.Keycloak) common.Des
 	}))
 
 	return d
+}
+
+func (r *ReconcileKeycloak) buildCurrentState(instance *kc.Keycloak) common.CurrentState {
+	selector := client.ObjectKey{
+		Name:      "demo-config-map",
+		Namespace: instance.Namespace,
+	}
+
+	var cm *corev1.ConfigMap = &corev1.ConfigMap{}
+
+	error := r.client.Get(context.TODO(), selector, cm);
+	if error != nil {
+		cm = nil
+	}
+
+	log.Info(fmt.Sprintf("Obtaining CM: %v", &cm))
+
+	return common.CurrentState{DemoConfigMap:cm}
 }

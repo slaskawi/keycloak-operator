@@ -32,12 +32,12 @@ func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
-// newReconciler returns a new reconcile.Reconciler
+// newReconciler returns a new reconcile.Reconcile
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileKeycloakRealm{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
+// add adds a new Controller to mgr with r as the reconcile.Reconcile
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
 	c, err := controller.New("keycloakrealm-controller", mgr, controller.Options{Reconciler: r})
@@ -64,7 +64,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-// blank assignment to verify that ReconcileKeycloakRealm implements reconcile.Reconciler
+// blank assignment to verify that ReconcileKeycloakRealm implements reconcile.Reconcile
 var _ reconcile.Reconciler = &ReconcileKeycloakRealm{}
 
 // ReconcileKeycloakRealm reconciles a KeycloakRealm object

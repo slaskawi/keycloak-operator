@@ -20,29 +20,29 @@ type KcConfigMap struct {
 
 func (i KcConfigMap) Exists(msg string) Action {
 	return &ExistsConfigMapAction{
-		ref: &i.Ref,
-		msg: msg,
+		Ref: &i.Ref,
+		Msg: msg,
 	}
 }
 
 func (i KcConfigMap) Update(msg string) Action {
 	return &UpdateConfigMapAction{
-		ref: &i.Ref,
-		msg: msg,
+		Ref: &i.Ref,
+		Msg: msg,
 	}
 }
 
 func (i KcConfigMap) Create(msg string) Action {
 	return &CreateConfigMapAction{
-		ref: &i.Ref,
-		msg: msg,
+		Ref: &i.Ref,
+		Msg: msg,
 	}
 }
 
 func (i KcConfigMap) Branch(on On) Action {
 	return &OnAction{
-		ref:     &i.Ref,
-		success: on.Success,
-		fail:    on.Fail,
+		Ref:     &i.Ref,
+		Success: on.Success,
+		Fail:    on.Fail,
 	}
 }
