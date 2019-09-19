@@ -2,11 +2,12 @@ package keycloak
 
 import (
 	"context"
+	"fmt"
 	kc "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/keycloak/keycloak-operator/pkg/common"
+	"github.com/keycloak/keycloak-operator/pkg/model/keycloak"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -99,38 +100,23 @@ func (r *ReconcileKeycloak) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	desiredState := r.buildDesiredClusterState(instance)
-	err = desiredState.RunAll()
+	desirecClusterState := r.buildDesiredClusterState(instance)
+	runner := common.NewActionRunner(r.client, log)
+	err = runner.RunAll(desirecClusterState)
 
 	if err != nil {
-		log.Info("desired state not met, retrying in 5 seconds")
-		return reconcile.Result{RequeueAfter: 5 * time.Second}, nil
+		log.Info(fmt.Sprint("desired cluster state not yet met"))
+		return reconcile.Result{}, nil
 	}
-
-	log.Info("cluster state equals desired state")
 
 	return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 }
 
-func (r *ReconcileKeycloak) buildDesiredClusterState(cr *kc.Keycloak) *common.ClusterState {
-	state := common.NewClusterState(r.client, log)
+func (r *ReconcileKeycloak) buildDesiredClusterState(cr *kc.Keycloak) common.DesiredClusterState {
+	desiredState := common.DesiredClusterState{}
 
-	state.Put(common.Create{Obj: &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-secret",
-			Namespace: cr.Namespace,
-		},
-	}})
+	desiredState = append(desiredState, common.KcConfigMap{Ref: keycloak.DemoConfigMap(cr)}.Create("create config map"))
+	desiredState = append(desiredState, common.KcConfigMap{Ref: keycloak.DemoConfigMap(cr)}.Exists("check if demo config map exists"))
 
-	state.Put(common.Ensure{Fn: func(i client.Client) error {
-		secret := &corev1.Secret{}
-
-		selector := client.ObjectKey{
-			Name:      "test-secret",
-			Namespace: cr.Namespace,
-		}
-		return i.Get(context.TODO(), selector, secret)
-	}})
-
-	return state
+	return desiredState
 }
