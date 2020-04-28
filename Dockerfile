@@ -1,4 +1,4 @@
-FROM ubi8-minimal:8-released AS build-env
+FROM ubi8-minimal:8-released
 
 RUN microdnf install -y git make golang
 
@@ -29,8 +29,8 @@ RUN microdnf update && microdnf clean all && rm -rf /var/cache/yum/*
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
 
-COPY --from=build-env /src/BUILD_INFO /src/BUILD_INFO
-COPY --from=build-env /src/tmp/_output/bin/keycloak-operator /usr/local/bin
+COPY --from=0 /src/BUILD_INFO /src/BUILD_INFO
+COPY --from=0 /src/tmp/_output/bin/keycloak-operator /usr/local/bin
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
