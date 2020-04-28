@@ -1,6 +1,6 @@
 FROM ubi8:8-released
 
-RUN dnf install -y git make golang
+RUN dnf install -y git make go-toolset
 
 ADD ./ /src
 RUN cd /src && make code/compile
