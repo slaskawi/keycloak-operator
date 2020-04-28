@@ -1,6 +1,6 @@
 FROM ubi8:8-released
 
-RUN microdnf install -y git make golang
+RUN dnf install -y git make golang
 
 ADD ./ /src
 RUN cd /src && make code/compile
