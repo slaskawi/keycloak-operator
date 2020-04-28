@@ -1,4 +1,4 @@
-FROM ubi8/ubi-minimal:8-released AS build-env
+FROM ubi8-minimal:8-released AS build-env
 
 RUN microdnf install -y git make golang
 
@@ -8,7 +8,7 @@ RUN cd /src && echo "Build SHA1: $(git rev-parse HEAD)"
 RUN cd /src && echo "$(git rev-parse HEAD)" > /src/BUILD_INFO
 
 # final stage
-FROM ubi8/ubi-minimal:8-released
+FROM ubi8-minimal:8-released
 
 LABEL \
     com.redhat.component="redhat-sso-7-sso74-operator-rhel8-container"  \
