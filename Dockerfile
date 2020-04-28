@@ -1,4 +1,4 @@
-FROM ubi8-minimal:8-released
+FROM ubi8:8-released
 
 RUN microdnf install -y git make golang
 
