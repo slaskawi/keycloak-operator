@@ -1,6 +1,6 @@
-FROM ubi8:8-released
+FROM openshift/golang-builder:1.12
 
-RUN dnf clean all && dnf install -y git make go-toolset
+RUN dnf install -y git make
 
 ADD ./ /src
 RUN cd /src && make code/compile
