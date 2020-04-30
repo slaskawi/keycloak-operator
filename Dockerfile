@@ -2,7 +2,7 @@ FROM ubi8-minimal:8.1-released
 
 RUN microdnf install -y git make golang
 
-COPY ./ /src
+COPY . /src/
 RUN ls /
 RUN ls /src
 RUN ls /src/
