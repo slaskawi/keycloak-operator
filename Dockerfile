@@ -1,11 +1,8 @@
-FROM ubi8-minimal:8.1-released
+FROM ubi8-minimal:8.1-released AS build-env
 
 RUN microdnf install -y git make golang
 
 COPY . /src/
-RUN ls /
-RUN ls /src
-RUN ls /src/
 RUN cd /src && make code/compile
 RUN cd /src && echo "Build SHA1: $(git rev-parse HEAD)"
 RUN cd /src && echo "$(git rev-parse HEAD)" > /src/BUILD_INFO
@@ -34,8 +31,8 @@ RUN microdnf update && microdnf clean all && rm -rf /var/cache/yum/*
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
 
-COPY --from=0 /src/BUILD_INFO /src/BUILD_INFO
-COPY --from=0 /src/tmp/_output/bin/keycloak-operator /usr/local/bin
+COPY --from=build-env /src/BUILD_INFO /src/BUILD_INFO
+COPY --from=build-env /src/tmp/_output/bin/keycloak-operator /usr/local/bin
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
