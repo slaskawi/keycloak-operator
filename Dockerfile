@@ -1,6 +1,6 @@
-FROM openshift/golang-builder:1.12
+FROM openshift/golang-builder:1.13
 
-RUN dnf install -y git make
+RUN yum install -y git make
 
 ADD ./ /src
 RUN cd /src && make code/compile
