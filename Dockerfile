@@ -1,6 +1,6 @@
-FROM openshift/golang-builder:1.13
+FROM ubi8-minimal:8.1-released
 
-RUN yum install -y git make
+RUN microdnf install -y git make golang
 
 ADD ./ /src
 RUN cd /src && make code/compile
