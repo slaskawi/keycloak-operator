@@ -3,6 +3,9 @@ FROM ubi8-minimal:8.1-released
 RUN microdnf install -y git make golang
 
 COPY ./ /src
+RUN ls /
+RUN ls /src
+RUN ls /src/
 RUN cd /src && make code/compile
 RUN cd /src && echo "Build SHA1: $(git rev-parse HEAD)"
 RUN cd /src && echo "$(git rev-parse HEAD)" > /src/BUILD_INFO
